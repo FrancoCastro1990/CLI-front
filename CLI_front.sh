@@ -33,62 +33,71 @@ NAME=$1
 TYPE=$3
 NO_FOLDER=false
 CURRENT_DIR=$(pwd)
+TEMP_DIR=$(mktemp -d)
 
 # Comprobar si la opción --no-folder fue proporcionada
 if [[ "$*" == *"--no-folder"* ]]; then
   NO_FOLDER=true
 fi
 
-# Función para copiar plantillas y renombrar
+# Función para copiar plantillas, renombrar y mover
 copiar_plantilla() {
   local TIPO=$1
   local DESTINO=$2
 
-  # Copiar archivos de la plantilla al destino
-  cp -r "$TEMPLATE_PATH/$TIPO/." "$DESTINO"
+  # Copiar archivos de la plantilla al directorio temporal
+  cp -r "$TEMPLATE_PATH/$TIPO/." "$TEMP_DIR"
   
-  # Reemplazar el nombre dentro de los archivos y renombrarlos
-  for file in $(find "$DESTINO" -type f); do
+  # Reemplazar el nombre dentro de los archivos y renombrarlos sin duplicar
+  for file in $(find "$TEMP_DIR" -type f); do
     # Reemplazar el contenido dentro del archivo
     sed -i "s/\$FILE_NAME/$NAME/g" "$file"
     
-    # Renombrar archivo si contiene Component, Hook o Service en el nombre
-    new_file_name=$(echo "$file" | sed -E "s/(Component|Hook|Service)/$NAME/")
-    if [ "$file" != "$new_file_name" ]; then
+    # Renombrar archivo si contiene Component, Hook o Service en el nombre, evitando duplicados
+    if [[ "$file" =~ (Component|Hook|Service) ]]; then
+      new_file_name="${file//Component/$NAME}"
+      new_file_name="${new_file_name//Hook/$NAME}"
+      new_file_name="${new_file_name//Service/$NAME}"
+
+      # Evitar sobrescritura si el archivo de destino ya existe
+      counter=1
+      while [ -e "$new_file_name" ]; do
+        new_file_name="${file%.*}_$counter.${file##*.}"
+        ((counter++))
+      done
+
       mv "$file" "$new_file_name"
     fi
   done
+
+  # Mover archivos del directorio temporal al destino
+  mv "$TEMP_DIR"/* "$DESTINO"
 }
 
+if [ "$TYPE" = "component" ]; then
+  echo "Creando componente..."
+elif [ "$TYPE" = "hook" ]; then
+  echo "Creando hook..."
+elif [ "$TYPE" = "service" ]; then
+  echo "Creando service..."
+else
+  echo "Error: Tipo desconocido. Usa 'component', 'hook' o 'service'."
+  mostrar_ayuda
+  exit 1
+fi
+
 # Crear estructura según el tipo
-case $TYPE in
-  component)
-    if [ "$NO_FOLDER" = true ]; then
-      DEST_PATH="$CURRENT_DIR"
-    else
-      DEST_PATH="$CURRENT_DIR/$NAME"
-      mkdir -p "$DEST_PATH"
-    fi
-    copiar_plantilla "component" "$DEST_PATH"
-    ;;
-  hook)
-    if [ "$NO_FOLDER" = true ]; then
-      DEST_PATH="$CURRENT_DIR"
-    else
-      DEST_PATH="$CURRENT_DIR/$NAME"
-      mkdir -p "$DEST_PATH"
-    fi
-    copiar_plantilla "hook" "$DEST_PATH"
-    ;;
-  service)
-    DEST_PATH="$CURRENT_DIR"
-    copiar_plantilla "service" "$DEST_PATH"
-    ;;
-  *)
-    echo "Error: Tipo desconocido. Usa 'component', 'hook' o 'service'."
-    mostrar_ayuda
-    exit 1
-    ;;
-esac
+if [ "$NO_FOLDER" = true ]; then
+  DEST_PATH="$CURRENT_DIR"
+else
+  DEST_PATH="$CURRENT_DIR/$NAME"
+  mkdir -p "$DEST_PATH"
+fi
+
+# Copiar y mover archivos al destino
+copiar_plantilla "$TYPE" "$DEST_PATH"
+
+# Limpiar el directorio temporal
+rm -rf "$TEMP_DIR"
 
 echo "$TYPE $NAME generado exitosamente en $DEST_PATH"
