@@ -5,12 +5,12 @@ TEMPLATE_PATH="$HOME/.cli-template"
 
 # Función para mostrar ayuda
 mostrar_ayuda() {
-  echo "Uso: $0 [nombre] --type [component|hook|service] [--no-folder]"
+  echo "Uso: $0 [nombre] --type [component|hook|service|context] [--no-folder]"
   echo
-  echo "Genera un componente, hook o service."
+  echo "Genera un componente, hook, service o context."
   echo
-  echo "  nombre         El nombre del componente, hook o service a generar."
-  echo "  --type         El tipo de estructura a generar: component, hook o service."
+  echo "  nombre         El nombre del componente, hook, service o context a generar."
+  echo "  --type         El tipo de estructura a generar: component, hook, service o context."
   echo "  --no-folder    (Opcional) Genera el archivo sin crear una carpeta."
 }
 
@@ -53,21 +53,31 @@ copiar_plantilla() {
     # Reemplazar el contenido dentro del archivo
     sed -i "s/\$FILE_NAME/$NAME/g" "$file"
     
-    # Renombrar archivo si contiene Component, Hook o Service en el nombre, evitando duplicados
-    if [[ "$file" =~ (Component|Hook|Service) ]]; then
+    # Renombrar archivo según el tipo
+    if [[ "$TYPE" = "context" && "$file" =~ (Provider|Context) ]]; then
+      # Para Context.tsx, se convierte en UserContext.tsx
+      new_file_name="${file//Context/${NAME}Context}"
+      # Para ContextProvider.tsx, se convierte en UserProvider.tsx
+      new_file_name="${new_file_name//Provider/${NAME}Provider}"
+    elif [[ "$TYPE" = "hook" && "$file" =~ (Hook) ]]; then
+      # Para Hook.ts, agregar "use" delante del nombre, como useUser.ts
+      new_file_name="${file//Hook/use$NAME}"
+    elif [[ "$file" =~ (Component|Service) ]]; then
+      # Para otros tipos, se renombra usando el nombre pasado como argumento
       new_file_name="${file//Component/$NAME}"
-      new_file_name="${new_file_name//Hook/$NAME}"
       new_file_name="${new_file_name//Service/$NAME}"
-
-      # Evitar sobrescritura si el archivo de destino ya existe
-      counter=1
-      while [ -e "$new_file_name" ]; do
-        new_file_name="${file%.*}_$counter.${file##*.}"
-        ((counter++))
-      done
-
-      mv "$file" "$new_file_name"
+    else
+      new_file_name="$file"
     fi
+
+    # Evitar sobrescritura si el archivo de destino ya existe
+    counter=1
+    while [ -e "$new_file_name" ]; do
+      new_file_name="${file%.*}_$counter.${file##*.}"
+      ((counter++))
+    done
+
+    mv "$file" "$new_file_name"
   done
 
   # Mover archivos del directorio temporal al destino
@@ -80,8 +90,10 @@ elif [ "$TYPE" = "hook" ]; then
   echo "Creando hook..."
 elif [ "$TYPE" = "service" ]; then
   echo "Creando service..."
+elif [ "$TYPE" = "context" ]; then
+  echo "Creando context..."
 else
-  echo "Error: Tipo desconocido. Usa 'component', 'hook' o 'service'."
+  echo "Error: Tipo desconocido. Usa 'component', 'hook', 'service' o 'context'."
   mostrar_ayuda
   exit 1
 fi
