@@ -1,7 +1,7 @@
 import React from "react";
 import style from "./$FILE_NAME.module.scss";
 
-// interface ComponenteProps {
+// interface ComponentProps {
 //   // add props here
 // }
 
@@ -10,5 +10,5 @@ type $FILE_NAMEProps = {
 };
 
 export const $FILE_NAME: React.FC<$FILE_NAMEProps> = (props) => {
-  return <div>{/* you component here */}</div>;
+  return <div>{/* your component here */}</div>;
 };

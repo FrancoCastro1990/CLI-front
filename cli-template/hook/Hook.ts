@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 export const use$FILE_NAME = () => {
-  // Lógica del hook aquí
+  // Hook logic here
   const [state, setState] = useState(null);
 
   return { state, setState };

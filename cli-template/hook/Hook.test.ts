@@ -2,8 +2,8 @@ import { renderHook } from '@testing-library/react-hooks';
 import { use$FILE_NAME } from './use$FILE_NAME';
 
 describe('use$FILE_NAME', () => {
-  it('should use Hook hook', () => {
+  it('should use $FILE_NAME hook', () => {
     const { result } = renderHook(() => use$FILE_NAME());
-    // Añade tus pruebas aquí
+    // Add your tests here
   });
 });

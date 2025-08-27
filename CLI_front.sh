@@ -1,30 +1,30 @@
 #!/bin/bash
 
-# Ruta a las plantillas
+# Path to templates
 TEMPLATE_PATH="$HOME/.cli-template"
 
-# Función para mostrar ayuda
-mostrar_ayuda() {
-  echo "Uso: $0 [nombre] --type [component|hook|service|context] [--no-folder]"
+# Function to show help
+show_help() {
+  echo "Usage: $0 [name] --type [component|hook|service|context] [--no-folder]"
   echo
-  echo "Genera un componente, hook, service o context."
+  echo "Generates a component, hook, service or context."
   echo
-  echo "  nombre         El nombre del componente, hook, service o context a generar."
-  echo "  --type         El tipo de estructura a generar: component, hook, service o context."
-  echo "  --no-folder    (Opcional) Genera el archivo sin crear una carpeta."
+  echo "  name           The name of the component, hook, service or context to generate."
+  echo "  --type         The type of structure to generate: component, hook, service or context."
+  echo "  --no-folder    (Optional) Generate the file without creating a folder."
 }
 
-# Verificar si se proporcionó un nombre
+# Check if a name was provided
 if [ -z "$1" ]; then
-  echo "Error: No se proporcionó un nombre."
-  mostrar_ayuda
+  echo "Error: No name was provided."
+  show_help
   exit 1
 fi
 
-# Verificar si se proporcionó el tipo
+# Check if type was provided
 if [ -z "$3" ]; then
-  echo "Error: No se proporcionó el tipo."
-  mostrar_ayuda
+  echo "Error: No type was provided."
+  show_help
   exit 1
 fi
 
@@ -35,42 +35,42 @@ NO_FOLDER=false
 CURRENT_DIR=$(pwd)
 TEMP_DIR=$(mktemp -d)
 
-# Comprobar si la opción --no-folder fue proporcionada
+# Check if --no-folder option was provided
 if [[ "$*" == *"--no-folder"* ]]; then
   NO_FOLDER=true
 fi
 
-# Función para copiar plantillas, renombrar y mover
-copiar_plantilla() {
-  local TIPO=$1
-  local DESTINO=$2
+# Function to copy templates, rename and move
+copy_template() {
+  local TYPE_PARAM=$1
+  local DESTINATION=$2
 
-  # Copiar archivos de la plantilla al directorio temporal
-  cp -r "$TEMPLATE_PATH/$TIPO/." "$TEMP_DIR"
+  # Copy template files to temporary directory
+  cp -r "$TEMPLATE_PATH/$TYPE_PARAM/." "$TEMP_DIR"
   
-  # Reemplazar el nombre dentro de los archivos y renombrarlos sin duplicar
+  # Replace name within files and rename them without duplicating
   for file in $(find "$TEMP_DIR" -type f); do
-    # Reemplazar el contenido dentro del archivo
+    # Replace content within the file
     sed -i "s/\$FILE_NAME/$NAME/g" "$file"
     
-    # Renombrar archivo según el tipo
+    # Rename file according to type
     if [[ "$TYPE" = "context" && "$file" =~ (Provider|Context) ]]; then
-      # Para Context.tsx, se convierte en UserContext.tsx
+      # For Context.tsx, it becomes UserContext.tsx
       new_file_name="${file//Context/${NAME}Context}"
-      # Para ContextProvider.tsx, se convierte en UserProvider.tsx
+      # For ContextProvider.tsx, it becomes UserProvider.tsx
       new_file_name="${new_file_name//Provider/${NAME}Provider}"
     elif [[ "$TYPE" = "hook" && "$file" =~ (Hook) ]]; then
-      # Para Hook.ts, agregar "use" delante del nombre, como useUser.ts
+      # For Hook.ts, add "use" before the name, like useUser.ts
       new_file_name="${file//Hook/use$NAME}"
     elif [[ "$file" =~ (Component|Service) ]]; then
-      # Para otros tipos, se renombra usando el nombre pasado como argumento
+      # For other types, rename using the name passed as argument
       new_file_name="${file//Component/$NAME}"
       new_file_name="${new_file_name//Service/$NAME}"
     else
       new_file_name="$file"
     fi
 
-    # Evitar sobrescritura si el archivo de destino ya existe
+    # Avoid overwriting if destination file already exists
     counter=1
     while [ -e "$new_file_name" ]; do
       new_file_name="${file%.*}_$counter.${file##*.}"
@@ -80,25 +80,25 @@ copiar_plantilla() {
     mv "$file" "$new_file_name"
   done
 
-  # Mover archivos del directorio temporal al destino
-  mv "$TEMP_DIR"/* "$DESTINO"
+  # Move files from temporary directory to destination
+  mv "$TEMP_DIR"/* "$DESTINATION"
 }
 
 if [ "$TYPE" = "component" ]; then
-  echo "Creando componente..."
+  echo "Creating component..."
 elif [ "$TYPE" = "hook" ]; then
-  echo "Creando hook..."
+  echo "Creating hook..."
 elif [ "$TYPE" = "service" ]; then
-  echo "Creando service..."
+  echo "Creating service..."
 elif [ "$TYPE" = "context" ]; then
-  echo "Creando context..."
+  echo "Creating context..."
 else
-  echo "Error: Tipo desconocido. Usa 'component', 'hook', 'service' o 'context'."
-  mostrar_ayuda
+  echo "Error: Unknown type. Use 'component', 'hook', 'service' or 'context'."
+  show_help
   exit 1
 fi
 
-# Crear estructura según el tipo
+# Create structure according to type
 if [ "$NO_FOLDER" = true ]; then
   DEST_PATH="$CURRENT_DIR"
 else
@@ -106,10 +106,10 @@ else
   mkdir -p "$DEST_PATH"
 fi
 
-# Copiar y mover archivos al destino
-copiar_plantilla "$TYPE" "$DEST_PATH"
+# Copy and move files to destination
+copy_template "$TYPE" "$DEST_PATH"
 
-# Limpiar el directorio temporal
+# Clean temporary directory
 rm -rf "$TEMP_DIR"
 
-echo "$TYPE $NAME generado exitosamente en $DEST_PATH"
+echo "$TYPE $NAME generated successfully in $DEST_PATH"
