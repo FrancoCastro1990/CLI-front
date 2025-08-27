@@ -16,7 +16,7 @@ A command-line tool for quickly generating React components, hooks, services, an
 ### Quick Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/yourusername/CLI-front/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/FrancoCastro1990/CLI-front/refs/heads/main/install.sh | bash
 ```
 
 ### Manual Install
